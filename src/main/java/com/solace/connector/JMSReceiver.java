@@ -3,10 +3,14 @@ package com.solace.connector;
 import org.apache.log4j.Logger;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.receiver.Receiver;
+
+import com.solacesystems.jcsmp.BytesXMLMessage;
+import com.solacesystems.jcsmp.TextMessage;
 import com.solacesystems.jms.SupportedProperty;
 
 import java.util.Hashtable;
 
+import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
@@ -14,7 +18,8 @@ import javax.jms.ExceptionListener;
 import javax.jms.JMSException; 
 import javax.jms.Message;
 import javax.jms.MessageConsumer; 
-import javax.jms.MessageListener; 
+import javax.jms.MessageListener;
+import javax.jms.ObjectMessage;
 import javax.jms.Session;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -40,7 +45,8 @@ public class JMSReceiver extends Receiver<String> implements MessageListener{
 	_vpn = vpn;
 	_username = username;
 	_password = password;
-	_queueName = queueName; _connectionFactory = connectionFactory;
+	_queueName = queueName; 
+	_connectionFactory = connectionFactory;
 	}
 
 	
@@ -87,8 +93,26 @@ public class JMSReceiver extends Receiver<String> implements MessageListener{
 	
 	@Override
 	public void onMessage(Message message) {
-	System.out.println("Callback onMessage received" + message); 
-	store(message.toString());
+		String	stringMessage  = "";
+		if (message instanceof BytesMessage){
+			BytesMessage byteMessage = (BytesMessage) message;
+			byte[] byteData = null;
+			
+			try {
+				byteData = new byte[(int) byteMessage.getBodyLength()];
+				byteMessage.readBytes(byteData);
+				byteMessage.reset();
+				stringMessage =  new String(byteData);
+	
+			} catch (JMSException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			}
+
+	
+	store(stringMessage);
 	//try {
 //	message.acknowledge(); 
 	
